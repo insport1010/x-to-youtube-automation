@@ -13,23 +13,25 @@ def state():return json.loads(STATE.read_text()) if STATE.exists() else {'upload
 def cookies_file(p):
  rows=['# Netscape HTTP Cookie File']
  for c in json.loads(os.getenv('X_COOKIES_JSON','[]')):
-  if 'name' in c and 'value' in c: rows.append('\t'.join([c.get('domain','.x.com'), 'TRUE' if c.get('domain','.x.com').startswith('.') else 'FALSE', c.get('path','/'), 'TRUE' if c.get('secure') else 'FALSE', str(int(c.get('expirationDate',0) or 0)), c['name'], c['value']]))
+  if 'name' in c and 'value' in c: rows.append('\t'.join([c.get('domain','.x.com'),'TRUE' if c.get('domain','.x.com').startswith('.') else 'FALSE',c.get('path','/'),'TRUE' if c.get('secure') else 'FALSE',str(int(c.get('expirationDate',0) or 0)),c['name'],c['value']]))
  Path(p).write_text('\n'.join(rows),encoding='utf-8')
 def fetch_candidates():
- o=Options();o.add_argument('--headless=new');o.add_argument('--no-sandbox');o.add_argument('--disable-dev-shm-usage');d=webdriver.Chrome(options=o)
+ o=Options();o.add_argument('--headless=new');o.add_argument('--no-sandbox');o.add_argument('--disable-dev-shm-usage');o.add_argument('--window-size=1280,1200');o.add_argument('--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36');o.add_argument('--disable-blink-features=AutomationControlled');d=webdriver.Chrome(options=o)
  try:
-  d.get('https://x.com/');time.sleep(2)
+  d.get('https://x.com/');time.sleep(3)
   for c in json.loads(os.getenv('X_COOKIES_JSON','[]')):
    try:d.add_cookie({k:c[k] for k in ('name','value','path','secure','httpOnly') if k in c})
    except:pass
-  d.refresh();d.get(f'https://x.com/{HANDLE}?f=live');time.sleep(6);ids=[]
-  for _ in range(4):
+  d.refresh();time.sleep(4);d.get(f'https://x.com/{HANDLE}');time.sleep(12)
+  print('X page:',d.current_url,'title=',d.title,'articles=',len(d.find_elements(By.CSS_SELECTOR,'article')))
+  ids=[]
+  for _ in range(6):
    for a in d.find_elements(By.CSS_SELECTOR,'article'):
     try:
      m=re.search(r'/status/(\d+)',a.find_element(By.CSS_SELECTOR,"a[href*='/status/']").get_attribute('href') or '')
      if m:ids.append(m.group(1))
     except:pass
-   d.execute_script('window.scrollBy(0,1800)');time.sleep(3)
+   d.execute_script('window.scrollBy(0,1600)');time.sleep(3)
   print('Found',len(set(ids)),'candidate posts');return list(dict.fromkeys(ids))
  finally:d.quit()
 def youtube():return build('youtube','v3',credentials=Credentials.from_authorized_user_info(json.loads(os.environ['YOUTUBE_TOKEN_JSON']),SCOPES))
