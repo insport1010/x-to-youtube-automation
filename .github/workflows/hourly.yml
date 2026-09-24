@@ -24,5 +24,6 @@ jobs:
           X_COOKIES_JSON: ${{ secrets.X_COOKIES_JSON_V2 }}
           X_HANDLE: FConPredict
           TIMEZONE: Africa/Cairo
+          STATE_FILE: force-state.json
           ALLOW_OUT_OF_WINDOW: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: python main.py
