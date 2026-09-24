@@ -4,3 +4,4 @@ google-auth-httplib2>=0.2.0
 yt-dlp>=2026.1.0
 requests>=2.32.0
 beautifulsoup4>=4.12.3
+selenium>=4.25.0
