@@ -1,0 +1,46 @@
+name: Rafa Drive release
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 13 * * *"
+      timezone: "Africa/Cairo"
+    - cron: "0 17 * * *"
+      timezone: "Africa/Cairo"
+    - cron: "0 19 * * *"
+      timezone: "Africa/Cairo"
+    - cron: "0 23 * * *"
+      timezone: "Africa/Cairo"
+
+concurrency:
+  group: rafa-drive-writes
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install rclone
+        run: sudo apt-get update && sudo apt-get install -y rclone
+      - name: Configure Google Drive
+        env:
+          RCLONE_CONFIG_B64: ${{ secrets.RCLONE_CONFIG_B64 }}
+        run: |
+          test -n "$RCLONE_CONFIG_B64"
+          mkdir -p "$HOME/.config/rclone"
+          printf '%s' "$RCLONE_CONFIG_B64" | base64 --decode > "$HOME/.config/rclone/rclone.conf"
+          chmod 600 "$HOME/.config/rclone/rclone.conf"
+          rclone lsd gdrive: --max-depth 1
+      - name: Release queued Rafa video
+        env:
+          FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
+        run: python release_rafa_video.py
