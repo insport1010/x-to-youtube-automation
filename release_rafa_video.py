@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import PurePosixPath, PureWindowsPath
 from zoneinfo import ZoneInfo
@@ -17,7 +18,12 @@ CAIRO = ZoneInfo("Africa/Cairo")
 RELEASE_HOURS = {13, 17, 19, 23}
 
 def videos(folder: str) -> list[dict]:
-    return [x for x in list_files(folder) if PurePosixPath(x["Name"]).suffix.lower() in VIDEO_EXTENSIONS]
+    try:
+        files = list_files(folder)
+    except subprocess.CalledProcessError:
+        # The automatic queue is optional; a missing folder means it is empty.
+        return []
+    return [x for x in files if PurePosixPath(x["Name"]).suffix.lower() in VIDEO_EXTENSIONS]
 
 def main() -> None:
     if os.environ.get("FORCE_RUN") != "1" and datetime.now(CAIRO).hour not in RELEASE_HOURS:
