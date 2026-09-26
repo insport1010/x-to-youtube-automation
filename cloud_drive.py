@@ -16,7 +16,7 @@ def run(*args: str, capture: bool = True) -> subprocess.CompletedProcess[str]:
     return subprocess.run(["rclone", *args], check=True, text=True, capture_output=capture)
 
 def list_files(folder: str) -> list[dict]:
-    return json.loads(run("lsjson", remote_path(folder), "--files-only", "--no-mimetype").stdout or "[]")
+    return json.loads(run("lsjson", remote_path(folder), "--files-only").stdout or "[]")
 
 def read_json(path: str, default):
     try:

@@ -22,7 +22,11 @@ def videos(folder: str) -> list[dict]:
     except subprocess.CalledProcessError:
         # The automatic queue is optional; a missing folder means it is empty.
         return []
-    return [x for x in files if PurePosixPath(x["Name"]).suffix.lower() in VIDEO_EXTENSIONS]
+    return [
+        x for x in files
+        if PurePosixPath(x["Name"]).suffix.lower() in VIDEO_EXTENSIONS
+        or str(x.get("MimeType", "")).lower().startswith("video/")
+    ]
 
 def main() -> None:
     if os.environ.get("FORCE_RUN") != "1" and datetime.now(CAIRO).hour not in RELEASE_HOURS:
