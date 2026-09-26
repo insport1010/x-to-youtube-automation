@@ -11,7 +11,6 @@ from cloud_drive import delete, list_files, move, read_json, write_json
 
 MAIN = "Rafa"
 QUEUE = "Rafa/Unused"
-AUTO_QUEUE = "Rafa/Unused/auto"
 STATE_PATH = "Rafa/.automation/released_videos.json"
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm"}
 CAIRO = ZoneInfo("Africa/Cairo")
@@ -44,10 +43,9 @@ def main() -> None:
         elif name in main_names and PurePosixPath(name).suffix.lower() in VIDEO_EXTENSIONS:
             delete(f"{MAIN}/{name}")
 
-    # Automatically downloaded videos have priority. Within each queue, oldest first.
-    auto = videos(AUTO_QUEUE)
+    # Both automatic downloads and manual additions share one queue; oldest first.
     manual = videos(QUEUE)
-    queued = [(AUTO_QUEUE, x) for x in auto] or [(QUEUE, x) for x in manual]
+    queued = [(QUEUE, x) for x in manual]
     queued.sort(key=lambda pair: (pair[1].get("ModTime", ""), pair[1]["Name"].lower()))
     if queued:
         source_queue, item = queued[0]
