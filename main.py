@@ -37,8 +37,6 @@ def short(f):
  x=json.loads(p.stdout);v=next((s for s in x.get('streams',[]) if s.get('width') and s.get('height')),None);return bool(v and float(x.get('format',{}).get('duration',0)or 0)<=180 and v['height']>=v['width'])
 def make_vertical(path):
  p=subprocess.run(['ffprobe','-v','error','-select_streams','v:0','-show_entries','stream=width,height','-of','json',str(path)],capture_output=True,text=True,check=True)
- v=json.loads(p.stdout)['streams'][0];w,h=int(v['width']),int(v['height'])
- if abs((w/h)-(9/16))<0.01:return
  temp=Path(tempfile.mktemp(suffix='.mp4'))
  try:
   subprocess.run(['ffmpeg','-y','-i',str(path),'-vf','scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black,setsar=1','-c:v','libx264','-crf','18','-preset','medium','-c:a','aac','-b:a','192k','-movflags','+faststart',str(temp)],check=True,capture_output=True,text=True)
