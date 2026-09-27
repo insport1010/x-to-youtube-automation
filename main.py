@@ -43,7 +43,10 @@ def main():
  if s['count']>=MAX_DAILY:return
  DEST.mkdir(parents=True,exist_ok=True)
  for pid in fetch_candidates():
-  if pid in s['downloaded'] or s['count']>=MAX_DAILY:continue
+  if pid in s['downloaded']:
+   print('Reached previously downloaded post',pid,'— stopping older-post scan')
+   break
+  if s['count']>=MAX_DAILY:break
   u=f'https://x.com/{HANDLE}/status/{pid}'
   with tempfile.TemporaryDirectory()as td:
    cf=str(Path(td)/'cookies.txt');cookies_file(cf);out=str(Path(td)/'video.%(ext)s')
