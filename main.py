@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-HANDLE=os.getenv('X_HANDLE','FConPredict');STATE=Path(os.getenv('STATE_FILE','state.json'));DEST=Path(os.getenv('DOWNLOAD_DIR',r'H:\My Drive\Rafa\Unused'));TZ=ZoneInfo(os.getenv('TIMEZONE','Africa/Cairo'))
+HANDLE=os.getenv('X_HANDLE','FConPredict');STATE=Path(os.getenv('STATE_FILE','state.json'));DEST=Path(os.getenv('DOWNLOAD_DIR',r'H:\My Drive\Rafa\Unused'));TZ=ZoneInfo(os.getenv('TIMEZONE','Africa/Cairo'));MAX_DOWNLOADS=int(os.getenv('MAX_DOWNLOADS','0'))
 def state():return json.loads(STATE.read_text()) if STATE.exists() else {'downloaded':[],'day':'','count':0}
 def cookies_file(p):
  rows=['# Netscape HTTP Cookie File']
@@ -45,10 +45,11 @@ def main():
   if pid in s['downloaded']:
    print('Reached previously downloaded post',pid,'— stopping older-post scan')
    break
+  if MAX_DOWNLOADS and s['count']>=MAX_DOWNLOADS:break
   u=f'https://x.com/{HANDLE}/status/{pid}'
   with tempfile.TemporaryDirectory()as td:
    cf=str(Path(td)/'cookies.txt');cookies_file(cf);out=str(Path(td)/'video.%(ext)s')
-   r=subprocess.run(['yt-dlp','--cookies',cf,'--no-warnings','--check-formats','-f','bestvideo+bestaudio','--merge-output-format','mp4','--print','description','-o',out,u],capture_output=True,text=True,timeout=180);fs=list(Path(td).glob('video.*'))
+   r=subprocess.run(['yt-dlp','--cookies',cf,'--no-warnings','--check-formats','-f','best','--merge-output-format','mp4','--print','description','-o',out,u],capture_output=True,text=True,timeout=180);fs=list(Path(td).glob('video.*'))
    print('Download',pid,'exit',r.returncode)
    if r.returncode or not fs:continue
    title=re.sub(r'\s+',' ',r.stdout.strip().splitlines()[0] if r.stdout.strip() else f'FConPredict video {pid}')
