@@ -35,6 +35,16 @@ def short(f):
  p=subprocess.run(['ffprobe','-v','error','-show_entries','format=duration:stream=width,height','-of','json',f],capture_output=True,text=True)
  if p.returncode:return False
  x=json.loads(p.stdout);v=next((s for s in x.get('streams',[]) if s.get('width') and s.get('height')),None);return bool(v and float(x.get('format',{}).get('duration',0)or 0)<=180 and v['height']>=v['width'])
+def make_vertical(path):
+ p=subprocess.run(['ffprobe','-v','error','-select_streams','v:0','-show_entries','stream=width,height','-of','json',str(path)],capture_output=True,text=True,check=True)
+ v=json.loads(p.stdout)['streams'][0];w,h=int(v['width']),int(v['height'])
+ if abs((w/h)-(9/16))<0.01:return
+ temp=Path(tempfile.mktemp(suffix='.mp4'))
+ try:
+  subprocess.run(['ffmpeg','-y','-i',str(path),'-vf','scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black,setsar=1','-c:v','libx264','-crf','18','-preset','medium','-c:a','aac','-b:a','192k','-movflags','+faststart',str(temp)],check=True,capture_output=True,text=True)
+  shutil.move(str(temp),str(path))
+ finally:
+  if temp.exists():temp.unlink()
 def main():
  n=datetime.now(TZ)
  if not(12<=n.hour<=23)and os.getenv('ALLOW_OUT_OF_WINDOW')!='1':return
@@ -55,7 +65,7 @@ def main():
    title=re.sub(r'[<>:"/\\|?*\x00-\x1f]','',title).strip(' .')[:99].rstrip()
    target=DEST/f'{title or "FConPredict video "+pid}.mp4'
    if target.exists():target=DEST/f'{title or "FConPredict video "+pid} ({pid}).mp4'
-   shutil.move(str(fs[0]),str(target));print('Saved',target)
+   shutil.move(str(fs[0]),str(target));make_vertical(target);print('Saved',target)
   s['downloaded'].append(pid);s['count']+=1
  STATE.write_text(json.dumps(s,indent=2))
 if __name__=='__main__':main()
