@@ -1,15 +1,12 @@
-import json,os,re,subprocess,tempfile,time
+import json,os,re,shutil,subprocess,tempfile,time
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
-HANDLE=os.getenv('X_HANDLE','FConPredict');STATE=Path(os.getenv('STATE_FILE','state.json'));TZ=ZoneInfo(os.getenv('TIMEZONE','Africa/Cairo'));MAX_DAILY=6;SCOPES=['https://www.googleapis.com/auth/youtube.upload']
-def state():return json.loads(STATE.read_text()) if STATE.exists() else {'uploaded':[],'day':'','count':0}
+HANDLE=os.getenv('X_HANDLE','FConPredict');STATE=Path(os.getenv('STATE_FILE','state.json'));DEST=Path(os.getenv('DOWNLOAD_DIR',r'H:\My Drive\Rafa\Unused'));TZ=ZoneInfo(os.getenv('TIMEZONE','Africa/Cairo'));MAX_DAILY=6
+def state():return json.loads(STATE.read_text()) if STATE.exists() else {'downloaded':[],'day':'','count':0}
 def cookies_file(p):
  rows=['# Netscape HTTP Cookie File']
  for c in json.loads(os.getenv('X_COOKIES_JSON','[]')):
@@ -34,8 +31,6 @@ def fetch_candidates():
    d.execute_script('window.scrollBy(0,1600)');time.sleep(3)
   print('Found',len(set(ids)),'candidate posts');return list(dict.fromkeys(ids))
  finally:d.quit()
-def youtube():return build('youtube','v3',credentials=Credentials.from_authorized_user_info(json.loads(os.environ['YOUTUBE_TOKEN_JSON']),SCOPES))
-def upload(api,f,t,d):return api.videos().insert(part='snippet,status',body={'snippet':{'title':t[:100],'description':d},'status':{'privacyStatus':'public'}},media_body=MediaFileUpload(f,resumable=True)).execute()['id']
 def short(f):
  p=subprocess.run(['ffprobe','-v','error','-show_entries','format=duration:stream=width,height','-of','json',f],capture_output=True,text=True)
  if p.returncode:return False
@@ -44,18 +39,22 @@ def main():
  n=datetime.now(TZ)
  if not(12<=n.hour<=23)and os.getenv('ALLOW_OUT_OF_WINDOW')!='1':return
  s=state();today=n.date().isoformat()
- if s.get('day')!=today:s={'uploaded':s.get('uploaded',[]),'day':today,'count':0}
+ if s.get('day')!=today:s={'downloaded':s.get('downloaded',[]),'day':today,'count':0}
  if s['count']>=MAX_DAILY:return
- api=youtube()
+ DEST.mkdir(parents=True,exist_ok=True)
  for pid in fetch_candidates():
-  if pid in s['uploaded'] or s['count']>=MAX_DAILY:continue
+  if pid in s['downloaded'] or s['count']>=MAX_DAILY:continue
   u=f'https://x.com/{HANDLE}/status/{pid}'
   with tempfile.TemporaryDirectory()as td:
    cf=str(Path(td)/'cookies.txt');cookies_file(cf);out=str(Path(td)/'video.%(ext)s')
    r=subprocess.run(['yt-dlp','--cookies',cf,'--no-warnings','--print','description','-o',out,u],capture_output=True,text=True,timeout=180);fs=list(Path(td).glob('video.*'))
    print('Download',pid,'exit',r.returncode)
    if r.returncode or not fs or not short(str(fs[0])):continue
-   vid=upload(api,str(fs[0]),re.sub(r'\s+',' ',r.stdout.strip())or f'FConPredict video {pid}',(r.stdout.strip()+'\n\nSource: '+u).strip());print('Uploaded',vid)
-  s['uploaded'].append(pid);s['count']+=1
+   title=re.sub(r'\s+',' ',r.stdout.strip().splitlines()[0] if r.stdout.strip() else f'FConPredict video {pid}')
+   title=re.sub(r'[<>:"/\\|?*\x00-\x1f]','',title).strip(' .')[:99].rstrip()
+   target=DEST/f'{title or "FConPredict video "+pid}.mp4'
+   if target.exists():target=DEST/f'{title or "FConPredict video "+pid} ({pid}).mp4'
+   shutil.move(str(fs[0]),str(target));print('Saved',target)
+  s['downloaded'].append(pid);s['count']+=1
  STATE.write_text(json.dumps(s,indent=2))
 if __name__=='__main__':main()
