@@ -25,6 +25,9 @@ def fetch_candidates():
   for _ in range(6):
    for a in d.find_elements(By.CSS_SELECTOR,'article'):
     try:
+     # Never treat the profile's pinned post as a new chronological post.
+     marker=a.find_elements(By.XPATH,".//*[contains(translate(normalize-space(.),'PINED','pined'),'pinned')]")
+     if marker: continue
      m=re.search(r'/status/(\d+)',a.find_element(By.CSS_SELECTOR,"a[href*='/status/']").get_attribute('href') or '')
      if m:ids.append(m.group(1))
     except:pass
