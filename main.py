@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-HANDLE=os.getenv('X_HANDLE','FConPredict');STATE=Path(os.getenv('STATE_FILE','state.json'));DEST=Path(os.getenv('DOWNLOAD_DIR',r'H:\My Drive\Rafa\Unused'));TZ=ZoneInfo(os.getenv('TIMEZONE','Africa/Cairo'));MAX_DAILY=6
+HANDLE=os.getenv('X_HANDLE','FConPredict');STATE=Path(os.getenv('STATE_FILE','state.json'));DEST=Path(os.getenv('DOWNLOAD_DIR',r'H:\My Drive\Rafa\Unused'));TZ=ZoneInfo(os.getenv('TIMEZONE','Africa/Cairo'))
 def state():return json.loads(STATE.read_text()) if STATE.exists() else {'downloaded':[],'day':'','count':0}
 def cookies_file(p):
  rows=['# Netscape HTTP Cookie File']
@@ -40,13 +40,11 @@ def main():
  if not(12<=n.hour<=23)and os.getenv('ALLOW_OUT_OF_WINDOW')!='1':return
  s=state();today=n.date().isoformat()
  if s.get('day')!=today:s={'downloaded':s.get('downloaded',[]),'day':today,'count':0}
- if s['count']>=MAX_DAILY:return
  DEST.mkdir(parents=True,exist_ok=True)
  for pid in fetch_candidates():
   if pid in s['downloaded']:
    print('Reached previously downloaded post',pid,'— stopping older-post scan')
    break
-  if s['count']>=MAX_DAILY:break
   u=f'https://x.com/{HANDLE}/status/{pid}'
   with tempfile.TemporaryDirectory()as td:
    cf=str(Path(td)/'cookies.txt');cookies_file(cf);out=str(Path(td)/'video.%(ext)s')
