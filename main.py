@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-HANDLE=os.getenv('X_HANDLE','FConPredict');STATE=Path(os.getenv('STATE_FILE','state.json'));DEST=Path(os.getenv('DOWNLOAD_DIR',r'H:\My Drive\Rafa\Unused'));TZ=ZoneInfo(os.getenv('TIMEZONE','Africa/Cairo'))
+HANDLE=os.getenv('X_HANDLE','FConPredict');STATE=Path(os.getenv('STATE_FILE','state.json'));DEST=Path(os.getenv('DOWNLOAD_DIR',r'H:\My Drive\Rafa\Unused'));MANIFEST=Path(os.getenv('DOWNLOAD_MANIFEST',r'H:\My Drive\Rafa\.automation\downloaded_videos.json'));TZ=ZoneInfo(os.getenv('TIMEZONE','Africa/Cairo'))
 def state():return json.loads(STATE.read_text()) if STATE.exists() else {'downloaded':[],'day':'','count':0}
 def cookies_file(p):
  rows=['# Netscape HTTP Cookie File']
@@ -64,6 +64,10 @@ def main():
    target=DEST/f'{title or "FConPredict video "+pid}.mp4'
    if target.exists():target=DEST/f'{title or "FConPredict video "+pid} ({pid}).mp4'
    shutil.move(str(fs[0]),str(target));make_vertical(target);print('Saved',target)
+   MANIFEST.parent.mkdir(parents=True,exist_ok=True)
+   manifest=json.loads(MANIFEST.read_text(encoding='utf-8')) if MANIFEST.exists() else {'videos':[]}
+   manifest.setdefault('videos',[]).append({'name':target.name,'post_id':pid,'downloaded_at':datetime.now(TZ).isoformat()})
+   MANIFEST.write_text(json.dumps(manifest,indent=2,ensure_ascii=False),encoding='utf-8')
   s['downloaded'].append(pid);s['count']+=1
  STATE.write_text(json.dumps(s,indent=2))
 if __name__=='__main__':main()
