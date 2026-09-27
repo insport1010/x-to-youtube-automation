@@ -47,7 +47,7 @@ def main():
   u=f'https://x.com/{HANDLE}/status/{pid}'
   with tempfile.TemporaryDirectory()as td:
    cf=str(Path(td)/'cookies.txt');cookies_file(cf);out=str(Path(td)/'video.%(ext)s')
-   r=subprocess.run(['yt-dlp','--cookies',cf,'--no-warnings','--print','description','-o',out,u],capture_output=True,text=True,timeout=180);fs=list(Path(td).glob('video.*'))
+   r=subprocess.run(['yt-dlp','--cookies',cf,'--no-warnings','--check-formats','-f','bestvideo+bestaudio','--merge-output-format','mp4','--print','description','-o',out,u],capture_output=True,text=True,timeout=180);fs=list(Path(td).glob('video.*'))
    print('Download',pid,'exit',r.returncode)
    if r.returncode or not fs or not short(str(fs[0])):continue
    title=re.sub(r'\s+',' ',r.stdout.strip().splitlines()[0] if r.stdout.strip() else f'FConPredict video {pid}')
