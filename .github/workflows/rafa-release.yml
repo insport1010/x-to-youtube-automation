@@ -5,11 +5,9 @@ on:
   schedule:
     - cron: "0 13 * * *"
       timezone: "Africa/Cairo"
-    - cron: "0 17 * * *"
+    - cron: "30 19 * * *"
       timezone: "Africa/Cairo"
-    - cron: "0 19 * * *"
-      timezone: "Africa/Cairo"
-    - cron: "0 23 * * *"
+    - cron: "30 23 * * *"
       timezone: "Africa/Cairo"
 
 concurrency:
