@@ -10,6 +10,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -192,8 +193,13 @@ def download_video(video: dict) -> Path:
     errors = []
     for attempt in range(1, 6):
         try:
-            download_via_tikdownloader(video["url"], output_path)
-            make_vertical(output_path)
+            # Keep all downloading/conversion off Google Drive. Drive's sync
+            # locking can interrupt an in-place replacement and leave .tmp files.
+            with tempfile.TemporaryDirectory(prefix="tiktok-") as staging_dir:
+                staged_path = Path(staging_dir) / "video.mp4"
+                download_via_tikdownloader(video["url"], staged_path)
+                make_vertical(staged_path)
+                shutil.move(str(staged_path), str(output_path))
             MANIFEST.parent.mkdir(parents=True, exist_ok=True)
             manifest = json.loads(MANIFEST.read_text(encoding="utf-8")) if MANIFEST.exists() else {"videos": []}
             manifest.setdefault("videos", []).append({
@@ -452,6 +458,15 @@ def run_once(username: str, count: int) -> int:
     event_path = DATA_DIR / f"{username}_new_videos.jsonl"
     activity_path = DATA_DIR / f"{username}_activity.log"
     seen = load_seen(state_path)
+    try:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8")) if MANIFEST.exists() else {}
+        seen.update(
+            str(item.get("post_id", "")).removeprefix("tiktok:")
+            for item in manifest.get("videos", [])
+            if str(item.get("post_id", "")).startswith("tiktok:")
+        )
+    except (OSError, ValueError, TypeError):
+        pass
 
     try:
         videos = fetch_recent(username, count)
