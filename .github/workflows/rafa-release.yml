@@ -13,6 +13,8 @@ on:
       timezone: "Africa/Cairo"
     - cron: "30 22 * * *"
       timezone: "Africa/Cairo"
+    - cron: "55 23 * * *"
+      timezone: "Africa/Cairo"
 
 concurrency:
   group: rafa-drive-writes
