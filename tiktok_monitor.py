@@ -108,6 +108,30 @@ def choose_output_path(caption: str) -> Path:
         index += 1
 
 
+def make_vertical(path: Path) -> None:
+    """Normalize downloaded TikTok videos to 1080x1920 with black padding."""
+    temporary = path.with_suffix(path.suffix + ".vertical.tmp.mp4")
+    try:
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", str(path),
+                "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,"
+                "pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black,setsar=1",
+                "-c:v", "libx264", "-crf", "18", "-preset", "medium",
+                "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart",
+                str(temporary),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            creationflags=hidden_process_flags(),
+        )
+        temporary.replace(path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
 def hidden_process_flags() -> int:
     return subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
 
@@ -169,6 +193,7 @@ def download_video(video: dict) -> Path:
     for attempt in range(1, 6):
         try:
             download_via_tikdownloader(video["url"], output_path)
+            make_vertical(output_path)
             MANIFEST.parent.mkdir(parents=True, exist_ok=True)
             manifest = json.loads(MANIFEST.read_text(encoding="utf-8")) if MANIFEST.exists() else {"videos": []}
             manifest.setdefault("videos", []).append({
