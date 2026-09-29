@@ -14,7 +14,7 @@ QUEUE = "Rafa/Unused"
 STATE_PATH = "Rafa/.automation/released_videos.json"
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm"}
 CAIRO = ZoneInfo("Africa/Cairo")
-RELEASE_HOURS = {13, 17, 19, 23}
+RELEASE_HOURS = {12, 15, 17, 20, 22}
 
 def videos(folder: str) -> list[dict]:
     try:
