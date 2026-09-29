@@ -3,11 +3,15 @@ name: Rafa Drive release
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 13 * * *"
+    - cron: "30 12 * * *"
       timezone: "Africa/Cairo"
-    - cron: "30 19 * * *"
+    - cron: "0 15 * * *"
       timezone: "Africa/Cairo"
-    - cron: "30 23 * * *"
+    - cron: "30 17 * * *"
+      timezone: "Africa/Cairo"
+    - cron: "0 20 * * *"
+      timezone: "Africa/Cairo"
+    - cron: "30 22 * * *"
       timezone: "Africa/Cairo"
 
 concurrency:
