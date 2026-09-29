@@ -202,12 +202,15 @@ def download_video(video: dict) -> Path:
                 shutil.move(str(staged_path), str(output_path))
             MANIFEST.parent.mkdir(parents=True, exist_ok=True)
             manifest = json.loads(MANIFEST.read_text(encoding="utf-8")) if MANIFEST.exists() else {"videos": []}
-            manifest.setdefault("videos", []).append({
-                "name": output_path.name,
-                "post_id": f"tiktok:{video['id']}",
-                "source": "tiktok",
-                "downloaded_at": utc_now(),
-            })
+            manifest.setdefault("videos", [])
+            post_id = f"tiktok:{video['id']}"
+            if not any(item.get("post_id") == post_id for item in manifest["videos"]):
+                manifest["videos"].append({
+                    "name": output_path.name,
+                    "post_id": post_id,
+                    "source": "tiktok",
+                    "downloaded_at": utc_now(),
+                })
             write_json(MANIFEST, manifest)
             return output_path
         except Exception as exc:
@@ -523,14 +526,24 @@ def parse_args() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
+    DATA_DIR.mkdir(exist_ok=True)
+    lock_path = DATA_DIR / "monitor.lock"
+    try:
+        lock = lock_path.open("x", encoding="utf-8")
+    except FileExistsError:
+        append_line(DATA_DIR / "monitor_errors.log", f"[{utc_now()}] Another TikTok monitor run is active; skipping.")
+        raise SystemExit(0)
     args = parse_args()
     try:
-        usernames = [clean_username(args.username)] if args.username else load_accounts(args.accounts_file)
-    except Exception as exc:
-        DATA_DIR.mkdir(exist_ok=True)
-        append_line(DATA_DIR / "monitor_errors.log", f"[{utc_now()}] {type(exc).__name__}: {exc}")
-        raise SystemExit(1)
-    result = 0
-    for username in usernames:
-        result = max(result, run_once(username, max(1, min(args.count, 30))))
-    raise SystemExit(result)
+        try:
+            usernames = [clean_username(args.username)] if args.username else load_accounts(args.accounts_file)
+        except Exception as exc:
+            append_line(DATA_DIR / "monitor_errors.log", f"[{utc_now()}] {type(exc).__name__}: {exc}")
+            raise SystemExit(1)
+        result = 0
+        for username in usernames:
+            result = max(result, run_once(username, max(1, min(args.count, 30))))
+        raise SystemExit(result)
+    finally:
+        lock.close()
+        lock_path.unlink(missing_ok=True)
