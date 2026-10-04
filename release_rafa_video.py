@@ -14,7 +14,6 @@ QUEUE = "Rafa/Unused"
 STATE_PATH = "Rafa/.automation/released_videos.json"
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm"}
 CAIRO = ZoneInfo("Africa/Cairo")
-RELEASE_HOURS = {12, 15, 17, 20, 22, 23}
 
 def videos(folder: str) -> list[dict]:
     try:
@@ -29,8 +28,6 @@ def videos(folder: str) -> list[dict]:
     ]
 
 def main() -> None:
-    if os.environ.get("FORCE_RUN") != "1" and datetime.now(CAIRO).hour not in RELEASE_HOURS:
-        return
     now = datetime.now(timezone.utc)
     state = read_json(STATE_PATH, {"releases": []})
     retained = []
