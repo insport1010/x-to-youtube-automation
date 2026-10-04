@@ -228,7 +228,8 @@ def download_via_tikdownloader(video_url: str, output_path: Path) -> None:
     with sync_playwright() as playwright:
         context = playwright.chromium.launch_persistent_context(
             str(profile_dir),
-            headless=False,
+            # Scheduled runs must never open a visible browser or console window.
+            headless=True,
             accept_downloads=True,
             viewport={"width": 1280, "height": 800},
             args=[
