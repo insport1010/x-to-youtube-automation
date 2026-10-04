@@ -14,6 +14,7 @@ QUEUE = "Rafa/Unused"
 STATE_PATH = "Rafa/.automation/released_videos.json"
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm"}
 CAIRO = ZoneInfo("Africa/Cairo")
+MIN_RELEASE_INTERVAL = timedelta(minutes=60)
 
 def videos(folder: str) -> list[dict]:
     try:
@@ -30,6 +31,13 @@ def videos(folder: str) -> list[dict]:
 def main() -> None:
     now = datetime.now(timezone.utc)
     state = read_json(STATE_PATH, {"releases": []})
+    last_release_at = state.get("last_release_at")
+    if last_release_at:
+        try:
+            if now - datetime.fromisoformat(last_release_at) < MIN_RELEASE_INTERVAL:
+                return
+        except (TypeError, ValueError):
+            pass
     retained = []
     main_names = {x["Name"] for x in list_files(MAIN)}
 
@@ -62,7 +70,12 @@ def main() -> None:
         move(f"{source_queue}/{source_name}", f"{MAIN}/{destination_name}")
         retained.append({"name": destination_name, "moved_at": now.isoformat()})
 
-    write_json(STATE_PATH, {"releases": retained})
+    output_state = {"releases": retained}
+    if queued:
+        output_state["last_release_at"] = now.isoformat()
+    elif last_release_at:
+        output_state["last_release_at"] = last_release_at
+    write_json(STATE_PATH, output_state)
 
 if __name__ == "__main__":
     main()
