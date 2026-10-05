@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import tempfile
+import time
 from pathlib import Path, PurePosixPath
 
 REMOTE = os.environ.get("RCLONE_REMOTE", "gdrive")
@@ -13,7 +14,22 @@ def remote_path(path: str) -> str:
     return f"{REMOTE}:{PurePosixPath(path.strip('/'))}"
 
 def run(*args: str, capture: bool = True) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["rclone", *args], check=True, text=True, capture_output=capture)
+    command = ["rclone", "--timeout", "60s", "--contimeout", "15s", *args]
+    last_error = None
+    for attempt in range(3):
+        try:
+            return subprocess.run(
+                command,
+                check=True,
+                text=True,
+                capture_output=capture,
+                timeout=90,
+            )
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+            last_error = exc
+            if attempt < 2:
+                time.sleep(3 * (attempt + 1))
+    raise last_error
 
 def list_files(folder: str) -> list[dict]:
     return json.loads(run("lsjson", remote_path(folder), "--files-only").stdout or "[]")
