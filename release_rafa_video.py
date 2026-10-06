@@ -52,12 +52,12 @@ def main() -> None:
         elif name in main_names and PurePosixPath(name).suffix.lower() in VIDEO_EXTENSIONS:
             delete(f"{MAIN}/{name}")
 
-    # Automatic X downloads have priority; manual additions are the fallback.
+    # Downloading is paused: release only files that are not in the automatic
+    # download manifest. Automatic X/TikTok files remain queued until resumed.
     auto_names = {x.get("name") for x in read_json("Rafa/.automation/downloaded_videos.json", {"videos": []}).get("videos", [])}
     queued_files = videos(QUEUE)
-    auto = [x for x in queued_files if x["Name"] in auto_names]
     manual = [x for x in queued_files if x["Name"] not in auto_names]
-    queued = [(QUEUE, x) for x in (auto or manual)]
+    queued = [(QUEUE, x) for x in manual]
     queued.sort(key=lambda pair: (pair[1].get("ModTime", ""), pair[1]["Name"].lower()))
     if queued:
         source_queue, item = queued[0]
